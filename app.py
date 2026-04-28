@@ -25,7 +25,7 @@ CLASS_EMOJI = {
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="VeggieLens — Klasifikasi Sayuran",
+    page_title="VeganTeng — Klasifikasi Sayuran",
     page_icon="🥦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -238,7 +238,7 @@ with st.sidebar:
     }
 
     # Cari info model yang dipilih
-    selected_key = model_option.split(" —")[0]
+    selected_key = model_option
     info = model_info.get(selected_key, {})
 
     if info:
@@ -345,7 +345,7 @@ with col_result:
                 <div class="result-card">
                     <div class="emoji">🔍</div>
                     <div class="label">{num_detections} Objek Terdeteksi</div>
-                    <div class="confidence">Model: {model_option.split(' —')[0]}</div>
+                    <div class="confidence">Model: {model_option}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -357,20 +357,8 @@ with col_result:
                         conf = float(box.conf[0])
                         cls_name = results[0].names.get(cls_id, f"Kelas {cls_id}")
                         emoji = CLASS_EMOJI.get(cls_name, "🌿")
-                        st.markdown(f"""
-                        <div style="
-                            background: rgba(255,255,255,0.04);
-                            border-radius: 12px;
-                            padding: 0.8rem 1.2rem;
-                            margin-bottom: 0.5rem;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                        ">
-                            <span>{emoji} <strong>{cls_name}</strong></span>
-                            <span style="opacity: 0.7;">{conf:.1%}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        conf_pct_det = conf * 100
+                        st.markdown(f"{emoji} **{cls_name}** — `{conf_pct_det:.1f}%`")
 
             else:
                 # --- Klasifikasi CNN ---
@@ -410,7 +398,6 @@ with col_result:
                 st.markdown("#### 🏆 Top-5 Prediksi")
                 top5_probs, top5_indices = torch.topk(probabilities, 5)
 
-                table_rows = ""
                 for rank, (prob, idx) in enumerate(zip(top5_probs, top5_indices), 1):
                     idx_val = idx.item()
                     label = CLASS_NAMES[idx_val] if idx_val < len(CLASS_NAMES) else f"Kelas {idx_val}"
@@ -418,30 +405,22 @@ with col_result:
                     prob_pct = prob.item() * 100
                     bar_width = prob.item() * 100
 
-                    highlight = "background: rgba(46,204,113,0.1);" if rank == 1 else ""
-                    table_rows += f"""
-                    <tr style="{highlight}">
-                        <td style="font-weight:600;">#{rank}</td>
-                        <td>{emoji} {label}</td>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <div style="flex:1; background:rgba(255,255,255,0.08); border-radius:6px; height:8px; overflow:hidden;">
-                                    <div style="width:{bar_width:.1f}%; height:100%; background:linear-gradient(90deg,#2ecc71,#a3f7bf); border-radius:6px;"></div>
-                                </div>
-                                <span style="min-width:50px; text-align:right; font-weight:500;">{prob_pct:.1f}%</span>
-                            </div>
-                        </td>
-                    </tr>
-                    """
+                    if rank == 1:
+                        bg = "rgba(46,204,113,0.15)"
+                        border = "1px solid rgba(46,204,113,0.3)"
+                    else:
+                        bg = "rgba(255,255,255,0.03)"
+                        border = "1px solid rgba(255,255,255,0.06)"
 
-                st.markdown(f"""
-                <table class="top5-table">
-                    <thead>
-                        <tr><th>Rank</th><th>Kelas</th><th>Probabilitas</th></tr>
-                    </thead>
-                    <tbody>{table_rows}</tbody>
-                </table>
-                """, unsafe_allow_html=True)
+                    st.markdown(f"""<div style="background:{bg}; border:{border}; border-radius:12px; padding:0.8rem 1.2rem; margin-bottom:0.5rem;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+<span style="font-weight:600;">#{rank} {emoji} {label}</span>
+<span style="font-weight:500;">{prob_pct:.1f}%</span>
+</div>
+<div style="background:rgba(255,255,255,0.08); border-radius:6px; height:8px; overflow:hidden;">
+<div style="width:{bar_width:.1f}%; height:100%; background:linear-gradient(90deg,#2ecc71,#a3f7bf); border-radius:6px;"></div>
+</div>
+</div>""", unsafe_allow_html=True)
 
     elif uploaded_file is None:
         st.markdown("""
