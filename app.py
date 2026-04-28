@@ -7,7 +7,7 @@ from ultralytics import YOLO
 
 # --- Konfigurasi ---
 # GANTI ANGKA INI DENGAN JUMLAH KELAS SAYURAN ANDA SAAT TRAINING
-NUM_CLASSES = 10 
+NUM_CLASSES = 15
 
 st.title("Aplikasi Klasifikasi & Deteksi Sayuran")
 
