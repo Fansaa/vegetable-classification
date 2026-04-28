@@ -5,7 +5,6 @@ from torchvision import transforms, models
 from PIL import Image
 from ultralytics import YOLO
 
-# --- Konfigurasi ---
 NUM_CLASSES = 15
 
 # Label kelas sayuran (sesuaikan dengan urutan kelas saat training)
@@ -23,6 +22,31 @@ CLASS_EMOJI = {
     "Pumpkin": "🎃", "Radish": "🥕", "Tomato": "🍅"
 }
 
+# Mapping dari nama kelas ImageNet (YOLO pretrained) ke CLASS_NAMES kita
+# Ini diperlukan karena model YOLO cls pretrained menggunakan 1000 kelas ImageNet
+IMAGENET_TO_CLASS = {
+    "French_bean": "Bean",
+    "broccoli": "Broccoli",
+    "cauliflower": "Cauliflower",
+    "head_cabbage": "Cabbage",
+    "bell_pepper": "Capsicum",
+    "carrot": "Carrot",          # Tidak ada di ImageNet standar, tapi beberapa versi punya
+    "cucumber": "Cucumber",
+    "pumpkin": "Pumpkin",
+    "potato": "Potato",          # Tidak ada di ImageNet standar
+    "tomato": "Tomato",          # Tidak ada di ImageNet standar
+    "zucchini": "Bottle Gourd",
+    "spaghetti_squash": "Pumpkin",
+    "butternut_squash": "Pumpkin",
+    "acorn_squash": "Pumpkin",
+    "eggplant": "Brinjal",
+    "Granny_Smith": "Papaya",
+    "papaya": "Papaya",          # Tidak ada di ImageNet standar
+    "daikon": "Radish",
+    "turnip": "Radish",
+    "artichoke": "Bitter Gourd",
+}
+
 # --- Page Config ---
 st.set_page_config(
     page_title="VeganTeng — Klasifikasi Sayuran",
@@ -31,7 +55,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS untuk tampilan premium ---
 st.markdown("""
 <style>
     /* Import Google Font */
@@ -334,17 +357,39 @@ with col_result:
     if uploaded_file is not None and model is not None and process_btn:
         with st.spinner("⏳ Memproses gambar..."):
             if "YOLO" in model_option:
-                # --- YOLO Classification ---
+                # --- YOLO Classification (pretrained ImageNet → filter ke 15 kelas) ---
                 results = model(image)
                 probs = results[0].probs
                 names = results[0].names
+                all_probs = probs.data.tolist()
+
+                # Kumpulkan probabilitas hanya untuk kelas yang ada di mapping
+                class_probs = {}
+                for idx, prob_val in enumerate(all_probs):
+                    imagenet_name = names.get(idx, "")
+                    mapped_name = IMAGENET_TO_CLASS.get(imagenet_name)
+                    if mapped_name:
+                        # Gabungkan probabilitas jika beberapa kelas ImageNet → 1 kelas kita
+                        class_probs[mapped_name] = class_probs.get(mapped_name, 0.0) + prob_val
+
+                # Jika tidak ada yang cocok, fallback ke prediksi asli YOLO
+                if not class_probs:
+                    top1_idx = probs.top1
+                    raw_label = names.get(top1_idx, f"Kelas {top1_idx}")
+                    class_probs[raw_label] = probs.top1conf.item()
+
+                # Normalisasi ulang probabilitas agar total = 1
+                total = sum(class_probs.values())
+                if total > 0:
+                    class_probs = {k: v / total for k, v in class_probs.items()}
+
+                # Sort berdasarkan probabilitas tertinggi
+                sorted_classes = sorted(class_probs.items(), key=lambda x: x[1], reverse=True)
 
                 # Prediksi utama
-                top1_idx = probs.top1
-                top1_conf = probs.top1conf.item()
-                pred_label = names.get(top1_idx, f"Kelas {top1_idx}")
+                pred_label = sorted_classes[0][0]
+                conf_pct = sorted_classes[0][1] * 100
                 pred_emoji = CLASS_EMOJI.get(pred_label, "🌿")
-                conf_pct = top1_conf * 100
 
                 # Kartu hasil utama
                 st.markdown(f"""
@@ -360,16 +405,14 @@ with col_result:
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # Top-5 Prediksi YOLO
+                # Top-5 Prediksi (dari kelas yang sudah difilter)
                 st.markdown("#### 🏆 Top-5 Prediksi")
-                top5_indices = probs.top5
-                top5_confs = probs.top5conf.tolist()
+                top5 = sorted_classes[:5]
 
-                for rank, (idx, conf) in enumerate(zip(top5_indices, top5_confs), 1):
-                    label = names.get(idx, f"Kelas {idx}")
+                for rank, (label, prob_val) in enumerate(top5, 1):
                     emoji = CLASS_EMOJI.get(label, "🌿")
-                    prob_pct = conf * 100
-                    bar_width = conf * 100
+                    prob_pct = prob_val * 100
+                    bar_width = prob_val * 100
 
                     if rank == 1:
                         bg = "rgba(46,204,113,0.15)"
