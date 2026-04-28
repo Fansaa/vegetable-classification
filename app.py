@@ -215,8 +215,8 @@ with st.sidebar:
     model_option = st.selectbox(
         "Pilih Model Inferensi",
         (
-            "YOLO11n",
-            "YOLO26n",
+            "YOLOv8n-cls",
+            "YOLO26n-cls",
             "MobileNetV3-Small",
             "EfficientNetV2-S",
             "ResNet18",
@@ -229,8 +229,8 @@ with st.sidebar:
     st.markdown("### 📋 Info Model")
 
     model_info = {
-        "YOLO11n": {"params": "~2.6M", "tipe": "Object Detection", "desc": "Ringan & cepat, cocok untuk deteksi real-time."},
-        "YOLO26n": {"params": "~2.6M", "tipe": "Object Detection", "desc": "Versi terbaru YOLO untuk deteksi objek."},
+        "YOLOv8n-cls": {"params": "~2.7M", "tipe": "Klasifikasi", "desc": "YOLO v8 Nano untuk klasifikasi gambar, ringan & cepat."},
+        "YOLO26n-cls": {"params": "~2.7M", "tipe": "Klasifikasi", "desc": "YOLO v26 Nano untuk klasifikasi gambar, versi terbaru."},
         "MobileNetV3-Small": {"params": "~2.5M", "tipe": "Klasifikasi", "desc": "Ultra-ringan, optimal untuk perangkat mobile."},
         "EfficientNetV2-S": {"params": "~21.5M", "tipe": "Klasifikasi", "desc": "Keseimbangan antara akurasi dan kecepatan."},
         "ResNet18": {"params": "~11.7M", "tipe": "Klasifikasi", "desc": "Arsitektur klasik dengan residual connections."},
@@ -260,11 +260,11 @@ with st.sidebar:
 # --- Fungsi Load Model dengan Cache ---
 @st.cache_resource
 def load_model(model_name):
-    if "YOLO11n" in model_name:
-        return YOLO("yolo11n.pt")
+    if "YOLOv8n-cls" in model_name:
+        return YOLO("yolov8n-cls.pt")
 
-    elif "YOLO26n" in model_name:
-        return YOLO("yolo26n.pt")
+    elif "YOLO26n-cls" in model_name:
+        return YOLO("yolo26n-cls.pt")
 
     elif "MobileNetV3" in model_name:
         model = models.mobilenet_v3_small(weights=None)
@@ -334,31 +334,59 @@ with col_result:
     if uploaded_file is not None and model is not None and process_btn:
         with st.spinner("⏳ Memproses gambar..."):
             if "YOLO" in model_option:
-                # --- YOLO Object Detection ---
+                # --- YOLO Classification ---
                 results = model(image)
-                res_plotted = results[0].plot()
-                st.image(res_plotted, caption="Hasil Deteksi Objek", use_container_width=True)
+                probs = results[0].probs
+                names = results[0].names
 
-                # Tampilkan jumlah objek terdeteksi
-                num_detections = len(results[0].boxes)
+                # Prediksi utama
+                top1_idx = probs.top1
+                top1_conf = probs.top1conf.item()
+                pred_label = names.get(top1_idx, f"Kelas {top1_idx}")
+                pred_emoji = CLASS_EMOJI.get(pred_label, "🌿")
+                conf_pct = top1_conf * 100
+
+                # Kartu hasil utama
                 st.markdown(f"""
                 <div class="result-card">
-                    <div class="emoji">🔍</div>
-                    <div class="label">{num_detections} Objek Terdeteksi</div>
-                    <div class="confidence">Model: {model_option}</div>
+                    <div class="emoji">{pred_emoji}</div>
+                    <div class="label">{pred_label}</div>
+                    <div class="confidence">Confidence: {conf_pct:.1f}%</div>
+                    <div class="conf-bar-bg">
+                        <div class="conf-bar-fill" style="width: {conf_pct:.1f}%;"></div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Detail deteksi jika ada
-                if num_detections > 0:
-                    st.markdown("#### Daftar Objek Terdeteksi")
-                    for i, box in enumerate(results[0].boxes):
-                        cls_id = int(box.cls[0])
-                        conf = float(box.conf[0])
-                        cls_name = results[0].names.get(cls_id, f"Kelas {cls_id}")
-                        emoji = CLASS_EMOJI.get(cls_name, "🌿")
-                        conf_pct_det = conf * 100
-                        st.markdown(f"{emoji} **{cls_name}** — `{conf_pct_det:.1f}%`")
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # Top-5 Prediksi YOLO
+                st.markdown("#### 🏆 Top-5 Prediksi")
+                top5_indices = probs.top5
+                top5_confs = probs.top5conf.tolist()
+
+                for rank, (idx, conf) in enumerate(zip(top5_indices, top5_confs), 1):
+                    label = names.get(idx, f"Kelas {idx}")
+                    emoji = CLASS_EMOJI.get(label, "🌿")
+                    prob_pct = conf * 100
+                    bar_width = conf * 100
+
+                    if rank == 1:
+                        bg = "rgba(46,204,113,0.15)"
+                        border = "1px solid rgba(46,204,113,0.3)"
+                    else:
+                        bg = "rgba(255,255,255,0.03)"
+                        border = "1px solid rgba(255,255,255,0.06)"
+
+                    st.markdown(f"""<div style="background:{bg}; border:{border}; border-radius:12px; padding:0.8rem 1.2rem; margin-bottom:0.5rem;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+<span style="font-weight:600;">#{rank} {emoji} {label}</span>
+<span style="font-weight:500;">{prob_pct:.1f}%</span>
+</div>
+<div style="background:rgba(255,255,255,0.08); border-radius:6px; height:8px; overflow:hidden;">
+<div style="width:{bar_width:.1f}%; height:100%; background:linear-gradient(90deg,#2ecc71,#a3f7bf); border-radius:6px;"></div>
+</div>
+</div>""", unsafe_allow_html=True)
 
             else:
                 # --- Klasifikasi CNN ---

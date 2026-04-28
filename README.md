@@ -30,10 +30,9 @@ Aplikasi web interaktif untuk mengklasifikasikan dan mendeteksi 15 jenis sayuran
 
 ## ✨ Fitur
 
-- 🔍 **Object Detection** — Deteksi posisi dan jenis sayuran dengan bounding box menggunakan YOLO
-- 🏷️ **Image Classification** — Klasifikasi gambar sayuran ke dalam 15 kelas dengan CNN
+- 🏷️ **Image Classification** — Klasifikasi gambar sayuran ke dalam 15 kelas menggunakan 6 arsitektur model
 - 📊 **Top-5 Prediksi** — Menampilkan 5 kelas teratas beserta confidence score dan progress bar visual
-- 🎛️ **Pilihan 6 Model** — Bandingkan performa berbagai arsitektur deep learning
+- 🏛️ **6 Arsitektur Model** — Bandingkan performa YOLO, MobileNet, EfficientNet, ResNet, dan VGG
 - 🎨 **UI Premium** — Tampilan modern dengan dark theme, glassmorphism, dan animasi halus
 - ☁️ **Cloud Deployment** — Dideploy di Streamlit Cloud, akses kapan saja via browser
 
@@ -58,15 +57,10 @@ Aplikasi ini dapat mengenali **15 jenis sayuran**:
 
 ## 🧠 Arsitektur Model
 
-### Object Detection
 | Model | Parameter | Deskripsi |
-|-------|-----------|-----------|
-| **YOLO11n** | ~2.6M | Ringan & cepat, cocok untuk deteksi real-time |
-| **YOLO26n** | ~2.6M | Versi terbaru YOLO untuk deteksi objek |
-
-### Image Classification
-| Model | Parameter | Deskripsi |
-|-------|-----------|-----------|
+|-------|-----------|----------|
+| **YOLOv8n-cls** | ~2.7M | YOLO v8 Nano untuk klasifikasi gambar, ringan & cepat |
+| **YOLO26n-cls** | ~2.7M | YOLO v26 Nano untuk klasifikasi gambar, versi terbaru |
 | **MobileNetV3-Small** | ~2.5M | Ultra-ringan, optimal untuk perangkat mobile |
 | **EfficientNetV2-S** | ~21.5M | Keseimbangan antara akurasi dan kecepatan |
 | **ResNet18** | ~11.7M | Arsitektur klasik dengan residual connections |
@@ -130,8 +124,8 @@ vegetable-classification/
 ├── best_efficientnet_v2_s.pth      # Pretrained EfficientNetV2-S weights
 ├── best_resnet18.pth               # Pretrained ResNet18 weights
 ├── best_vgg11.pth                  # Pretrained VGG11 weights
-├── yolo11n.pt                      # Pretrained YOLO11n weights
-└── yolo26n.pt                      # Pretrained YOLO26n weights
+├── yolov8n-cls.pt                  # Pretrained YOLOv8n classification weights
+└── yolo26n-cls.pt                  # Pretrained YOLO26n classification weights
 ```
 
 ---
