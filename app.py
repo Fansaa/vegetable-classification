@@ -202,8 +202,8 @@ st.markdown("""
 # --- Hero Header ---
 st.markdown("""
 <div class="hero-header">
-    <h1>🥦 VeggieLens</h1>
-    <p>Klasifikasi & Deteksi Sayuran berbasis Deep Learning</p>
+    <h1>🥦 VeganTeng</h1>
+    <p>Klasifikasi Sayuran</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -215,12 +215,12 @@ with st.sidebar:
     model_option = st.selectbox(
         "Pilih Model Inferensi",
         (
-            "YOLO11n — Object Detection",
-            "YOLO26n — Object Detection",
-            "MobileNetV3-Small — Klasifikasi",
-            "EfficientNetV2-S — Klasifikasi",
-            "ResNet18 — Klasifikasi",
-            "VGG11 — Klasifikasi",
+            "YOLO11n",
+            "YOLO26n",
+            "MobileNetV3-Small",
+            "EfficientNetV2-S",
+            "ResNet18",
+            "VGG11",
         ),
         help="Pilih arsitektur model yang ingin digunakan untuk inferensi."
     )
@@ -252,7 +252,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown(
-        "<p style='text-align:center; font-size:0.75rem; opacity:0.4;'>VeggieLens v1.0 — ABP Project</p>",
+        "<p style='text-align:center; font-size:0.75rem; opacity:0.4;'>VeganTeng — Computer Vision Project</p>",
         unsafe_allow_html=True
     )
 
